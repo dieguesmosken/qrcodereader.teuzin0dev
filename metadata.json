@@ -1,0 +1,6 @@
+{
+  "name": "QR Code Reader",
+  "description": "App leitor de QR code que salva histórico no SQLite para acesso offline com configurações.",
+  "requestFramePermissions": ["CAMERA"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
