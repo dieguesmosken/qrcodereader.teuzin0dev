@@ -49,74 +49,67 @@ fun ScannerScreen(
 
     if (cameraPermissionState.status.isGranted) {
         Box(modifier = modifier.fillMaxSize()) {
-            AndroidView(
-                factory = { ctx ->
-                    val previewView = PreviewView(ctx).apply {
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    }
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+            val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+            val cameraProvider = remember(cameraProviderFuture) { cameraProviderFuture.get() }
+            val previewView = remember {
+                PreviewView(context).apply {
+                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                }
+            }
 
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-                        
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
-                        }
+            DisposableEffect(lifecycleOwner) {
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
 
-                        val imageAnalysis = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-                            .also {
-                                it.setAnalyzer(
-                                    Executors.newSingleThreadExecutor(),
-                                    BarcodeAnalyzer { value, format ->
-                                        val currentTime = System.currentTimeMillis()
-                                        if (value != lastScannedValue || currentTime - lastScannedTime > 3000) {
-                                            lastScannedValue = value
-                                            lastScannedTime = currentTime
-                                            viewModel.addScanResult(value, format)
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(
+                            Executors.newSingleThreadExecutor(),
+                            BarcodeAnalyzer { value, format ->
+                                val currentTime = System.currentTimeMillis()
+                                if (value != lastScannedValue || currentTime - lastScannedTime > 3000) {
+                                    lastScannedValue = value
+                                    lastScannedTime = currentTime
+                                    viewModel.addScanResult(value, format)
 
-                                            if (autoOpenLinks && (value.startsWith("http://") || value.startsWith("https://"))) {
-                                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(value))
-                                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                                try {
-                                                    ctx.startActivity(intent)
-                                                } catch (e: Exception) {
-                                                    // Handle exception
-                                                }
-                                            }
+                                    if (autoOpenLinks && (value.startsWith("http://") || value.startsWith("https://"))) {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(value))
+                                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        try {
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            // Handle exception
                                         }
                                     }
-                                )
+                                }
                             }
+                        )
+                    }
 
-                        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
-                        try {
-                            cameraProvider.unbindAll()
-                            cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                cameraSelector,
-                                preview,
-                                imageAnalysis
-                            )
-                        } catch (exc: Exception) {
-                            // Handle exceptions
-                        }
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        cameraSelector,
+                        preview,
+                        imageAnalysis
+                    )
+                } catch (exc: Exception) {
+                    // Handle exceptions
+                }
 
-                    }, ContextCompat.getMainExecutor(ctx))
+                onDispose {
+                    cameraProvider.unbindAll()
+                }
+            }
 
-                    previewView
-                },
-                onRelease = { ctx ->
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx.context)
-                    cameraProviderFuture.addListener({
-                        try {
-                            val cameraProvider = cameraProviderFuture.get()
-                            cameraProvider.unbindAll()
-                        } catch (e: Exception) {}
-                    }, ContextCompat.getMainExecutor(ctx.context))
-                },
+            AndroidView(
+                factory = { previewView },
                 modifier = Modifier.fillMaxSize()
             )
 
