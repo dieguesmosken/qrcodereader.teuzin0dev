@@ -35,6 +35,12 @@ class AppViewModel(
         initialValue = false
     )
 
+    val vibrateOnScan = preferences.isVibrateOnScan.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
     val userName = preferences.userName.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -87,6 +93,12 @@ class AppViewModel(
     fun setAutoOpenLinks(enabled: Boolean) {
         viewModelScope.launch {
             preferences.setAutoOpenLinks(enabled)
+        }
+    }
+
+    fun setVibrateOnScan(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setVibrateOnScan(enabled)
         }
     }
 }

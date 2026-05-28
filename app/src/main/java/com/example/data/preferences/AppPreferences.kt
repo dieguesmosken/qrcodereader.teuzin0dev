@@ -13,6 +13,7 @@ class AppPreferences(private val context: Context) {
     companion object {
         val DARK_MODE_KEY = booleanPreferencesKey("dark_mode")
         val AUTO_OPEN_LINKS_KEY = booleanPreferencesKey("auto_open_links")
+        val VIBRATE_ON_SCAN_KEY = booleanPreferencesKey("vibrate_on_scan")
         val USER_NAME_KEY = androidx.datastore.preferences.core.stringPreferencesKey("user_name")
         val USER_EMAIL_KEY = androidx.datastore.preferences.core.stringPreferencesKey("user_email")
     }
@@ -23,6 +24,10 @@ class AppPreferences(private val context: Context) {
 
     val isAutoOpenLinks: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[AUTO_OPEN_LINKS_KEY] ?: false
+    }
+
+    val isVibrateOnScan: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[VIBRATE_ON_SCAN_KEY] ?: true
     }
     
     val userName: Flow<String?> = context.dataStore.data.map { preferences ->
@@ -42,6 +47,12 @@ class AppPreferences(private val context: Context) {
     suspend fun setAutoOpenLinks(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[AUTO_OPEN_LINKS_KEY] = enabled
+        }
+    }
+
+    suspend fun setVibrateOnScan(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[VIBRATE_ON_SCAN_KEY] = enabled
         }
     }
     

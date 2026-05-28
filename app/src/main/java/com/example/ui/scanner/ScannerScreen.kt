@@ -18,6 +18,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FlashlightOn
+import androidx.compose.material.icons.filled.FlashlightOff
 import com.example.ui.viewmodel.AppViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -37,9 +40,13 @@ fun ScannerScreen(
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     val autoOpenLinks by viewModel.autoOpenLinks.collectAsState()
+    val vibrateOnScan by viewModel.vibrateOnScan.collectAsState()
 
     var lastScannedValue by remember { mutableStateOf<String?>(null) }
     var lastScannedTime by remember { mutableStateOf(0L) }
+    
+    var isTorchOn by remember { mutableStateOf(false) }
+    var cameraControl by remember { mutableStateOf<androidx.camera.core.CameraControl?>(null) }
 
     LaunchedEffect(Unit) {
         if (!cameraPermissionState.status.isGranted) {
@@ -75,6 +82,16 @@ fun ScannerScreen(
                                     lastScannedTime = currentTime
                                     viewModel.addScanResult(value, format)
 
+                                    if (vibrateOnScan) {
+                                        val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+                                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                            vibrator.vibrate(android.os.VibrationEffect.createOneShot(100, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+                                        } else {
+                                            @Suppress("DEPRECATION")
+                                            vibrator.vibrate(100)
+                                        }
+                                    }
+
                                     if (autoOpenLinks && (value.startsWith("http://") || value.startsWith("https://"))) {
                                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(value))
                                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -93,12 +110,13 @@ fun ScannerScreen(
 
                 try {
                     cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
+                    val camera = cameraProvider.bindToLifecycle(
                         lifecycleOwner,
                         cameraSelector,
                         preview,
                         imageAnalysis
                     )
+                    cameraControl = camera.cameraControl
                 } catch (exc: Exception) {
                     // Handle exceptions
                 }
@@ -112,6 +130,24 @@ fun ScannerScreen(
                 factory = { previewView },
                 modifier = Modifier.fillMaxSize()
             )
+
+            LaunchedEffect(isTorchOn, cameraControl) {
+                cameraControl?.enableTorch(isTorchOn)
+            }
+
+            IconButton(
+                onClick = { isTorchOn = !isTorchOn },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 16.dp, end = 16.dp)
+            ) {
+                Icon(
+                    imageVector = if (isTorchOn) Icons.Default.FlashlightOff else Icons.Default.FlashlightOn,
+                    contentDescription = "Alternar Lanterna",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
 
             // Scrim
             if (lastScannedValue != null) {

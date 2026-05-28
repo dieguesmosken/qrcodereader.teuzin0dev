@@ -66,6 +66,7 @@ fun AboutScreen(
             Text(
                 text = "• Jetpack Compose\n" +
                         "• ML Kit Barcode Scanning\n" +
+                        "• ZXing (QR Code generation)\n" +
                         "• CameraX\n" +
                         "• Room Database\n" +
                         "• Credential Manager (Google Sign-In)\n" +

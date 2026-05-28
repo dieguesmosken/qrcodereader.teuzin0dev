@@ -26,6 +26,7 @@ fun SettingsScreen(
 ) {
     val isDarkMode by viewModel.isDarkMode.collectAsState()
     val autoOpenLinks by viewModel.autoOpenLinks.collectAsState()
+    val vibrateOnScan by viewModel.vibrateOnScan.collectAsState()
     val history by viewModel.history.collectAsState()
     val context = LocalContext.current
 
@@ -72,6 +73,18 @@ fun SettingsScreen(
                 Switch(
                     checked = autoOpenLinks,
                     onCheckedChange = { viewModel.setAutoOpenLinks(it) }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Vibrar ao Ler")
+                Switch(
+                    checked = vibrateOnScan,
+                    onCheckedChange = { viewModel.setVibrateOnScan(it) }
                 )
             }
 
